@@ -14,6 +14,11 @@ make_shim() {
         return 1
     fi
 
+    shims_dir="$uniget_root/shims/"
+    if ! [ -d "$shims_dir" ]; then
+        mkdir -p "$shims_dir"
+    fi
+
     cat <<EOF > "$shim_file"
 #! /bin/sh
 # from package: $(basename "$package_dir")
