@@ -1,0 +1,22 @@
+#! /bin/sh
+
+if [ $# -lt 1 ]; then
+    echo " missing package name to install"
+    exit 1
+fi
+
+packages_dir="$(uniget root)/packages"
+
+uniget .nuget install \
+    -Source "$(uniget sourcesDividedBySemiColon)" \
+    -OutputDirectory "$packages_dir" $1 |
+grep '^Successfully installed ' |
+sed 's/^Successfully installed \(.*\)\.$/\1/' |
+xargs -n 1 | sed 's/ /./' | while read package; do
+    if [ -n "$package" ]; then
+        uniget setup $package
+    fi
+done
+
+echo "done"
+

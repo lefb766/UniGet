@@ -1,0 +1,54 @@
+#! /bin/sh
+
+uniget_root="$(uniget root)"
+packages="$uniget_root/packages"
+
+make_shim() {
+    shim_name="$1"
+    command_path="$package_dir/tools/$2"
+    shift 2
+
+    shim_file="$uniget_root/shims/$shim_name"
+    if [ -e "$shim_file" ]; then
+        echo "$shim_file already exists. skipped"
+        return 1
+    fi
+
+    cat <<EOF > "$shim_file"
+#! /bin/sh
+# from package: $(basename "$package_dir")
+
+exec mono "$command_path" "\$@"
+EOF
+
+    chmod +x "$shim_file"
+
+    echo "created shim $shim_file"
+}
+
+if [ $# -lt 1 ]; then
+    echo "$0: no package name given"
+    exit 1
+fi
+
+package_dir="$packages/$1"
+config_file="$package_dir/tools/UniGetInstall.config"
+shift
+
+if [ -e "$config_file" ]; then
+    < "$config_file" grep -v '^#' |
+    while read config; do
+        command_name_regex='\w[[:alnum:]._-]*'
+        clicommand_regex="^clicommand $command_name_regex=$command_name_regex"
+        if echo "$config" | grep -q "$clicommand_regex"; then
+            make_shim $(echo "$config" | sed 's/^clicommand \(.*\)=.*$/\1/') \
+                $(echo "$config" | sed 's/^.*=\(.*\)$/\1/')
+        else
+            echo "warning: ignored the line \"$config\"" >&2
+            echo "    from $config_file" >&2
+        fi
+    done
+else
+    echo "$config_file does not exist"
+fi
+

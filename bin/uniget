@@ -1,0 +1,41 @@
+#!/bin/sh
+
+UNIGET_ROOT="$(cd $(dirname $(dirname $0)); pwd)"
+export UNIGET_ROOT
+
+PATH="$UNIGET_ROOT/bin:$PATH"
+export PATH
+
+nuget="$UNIGET_ROOT/.nuget/NuGet.exe"
+packages_dir="$UNIGET_ROOT/packages"
+
+command="$1"
+shift
+
+case $command in
+    root)
+        echo "$UNIGET_ROOT"
+        ;;
+
+    .nuget)
+        nuget_command=$1
+        shift
+
+        exec mono $nuget $nuget_command "$@"
+        ;;
+
+    sourcesDividedBySemiColon)
+        < "$UNIGET_ROOT/config/sources" xargs | tr ' ' ';'
+        ;;
+
+    *)
+        script_file="$UNIGET_ROOT/libexec/uniget-$command"
+        if [ -x $script_file ]; then
+            "$script_file" "$@"
+        else
+            echo " unknown command $1"
+            exit 1
+        fi
+        ;;
+esac
+
